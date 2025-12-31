@@ -1,0 +1,329 @@
+ initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>手搖是信仰 2026</title>
+    <!-- PWA Meta Tags for App Experience -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- External Scripts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #F0F7FF;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+        }
+
+        .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+        .animate-float { animation: float 8s ease-in-out infinite; }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-cols: repeat(7, 1fr);
+        }
+        
+        /* App Window Feel */
+        .app-container {
+            max-width: 500px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+            background: linear-gradient(180deg, #F0F7FF 0%, #E0EFFF 100%);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        const { 
+            Plus, Calendar, BarChart3, Trash2, ChevronLeft, ChevronRight, 
+            CupSoda, DollarSign, Heart, Store, Coffee, Star, Flower, Wind, Cloud, X 
+        } = lucide;
+
+        // --- Firebase Configuration ---
+        // 如果你要自己部署，請將下方的 config 換成你自己的 Firebase 資訊
+        const firebaseConfig = JSON.parse(window.__firebase_config || '{}');
+        const appId = window.__app_id || 'drink-faith-2026';
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 1));
+            const [records, setRecords] = useState({});
+            const [selectedDate, setSelectedDate] = useState(null);
+            const [isModalOpen, setIsModalOpen] = useState(false);
+            const [loading, setLoading] = useState(true);
+
+            const iceOptions = ["正常", "少冰", "微冰", "去冰", "常溫", "溫"];
+            const sweetnessOptions = ["全糖", "少糖", "半糖", "微糖", "一分糖", "無糖"];
+            const [form, setForm] = useState({ shop: '', item: '', ice: '微冰', sweetness: '微糖', price: '' });
+
+            // Initialize Firebase
+            useEffect(() => {
+                const initFirebase = async () => {
+                    if (!firebaseConfig.apiKey) {
+                        setLoading(false);
+                        return;
+                    }
+                    try {
+                        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
+                        const { getAuth, signInAnonymously, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js');
+                        const { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+
+                        const app = initializeApp(firebaseConfig);
+                        const auth = getAuth(app);
+                        const db = getFirestore(app);
+
+                        signInAnonymously(auth);
+                        onAuthStateChanged(auth, (currUser) => {
+                            setUser(currUser);
+                            if (currUser) {
+                                const q = collection(db, 'artifacts', appId, 'users', currUser.uid, 'drink_records');
+                                onSnapshot(q, (snapshot) => {
+                                    const data = {};
+                                    snapshot.forEach(doc => {
+                                        const r = doc.data();
+                                        if(!data[r.date]) data[r.date] = [];
+                                        data[r.date].push({ id: doc.id, ...r });
+                                    });
+                                    setRecords(data);
+                                    setLoading(false);
+                                });
+                            }
+                        });
+                        window._dbOps = { doc, setDoc, deleteDoc, db, collection };
+                    } catch (e) {
+                        console.error(e);
+                        setLoading(false);
+                    }
+                };
+                initFirebase();
+            }, []);
+
+            const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+            const firstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+            const formatDate = (date) => {
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const d = String(date.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            };
+
+            const stats = useMemo(() => {
+                let count = 0, total = 0;
+                const shops = {}, items = {};
+                Object.values(records).flat().forEach(r => {
+                    count++; total += Number(r.price || 0);
+                    shops[r.shop] = (shops[r.shop] || 0) + 1;
+                    items[r.item] = (items[r.item] || 0) + 1;
+                });
+                const top = (obj) => Object.entries(obj).sort((a,b) => b[1]-a[1])[0]?.[0] || '無';
+                return { count, total, shop: top(shops), item: top(items) };
+            }, [records]);
+
+            const handleSave = async () => {
+                if (!form.shop || !form.item || !form.price) return;
+                if (!window._dbOps) {
+                    // Local Preview Fallback
+                    const d = selectedDate;
+                    const newR = { id: Date.now().toString(), ...form, price: Number(form.price), date: d };
+                    setRecords(prev => ({ ...prev, [d]: [...(prev[d]||[]), newR] }));
+                } else {
+                    const id = Date.now().toString();
+                    await window._dbOps.setDoc(window._dbOps.doc(window._dbOps.db, 'artifacts', appId, 'users', user.uid, 'drink_records', id), {
+                        ...form, price: Number(form.price), date: selectedDate
+                    });
+                }
+                setForm({ shop: '', item: '', ice: '微冰', sweetness: '微糖', price: '' });
+                setIsModalOpen(false);
+            };
+
+            const handleDelete = async (id) => {
+                if (!window._dbOps) {
+                    setRecords(prev => ({ ...prev, [selectedDate]: prev[selectedDate].filter(r => r.id !== id) }));
+                } else {
+                    await window._dbOps.deleteDoc(window._dbOps.doc(window._dbOps.db, 'artifacts', appId, 'users', user.uid, 'drink_records', id));
+                }
+            };
+
+            return (
+                <div className="app-container pb-20 overflow-y-auto no-scrollbar">
+                    {/* Decorative Background */}
+                    <div className="fixed inset-0 pointer-events-none opacity-30 z-0">
+                        <Flower className="absolute top-10 left-10 animate-spin-slow text-blue-300" size={64}/>
+                        <Flower className="absolute top-1/2 right-[-20px] animate-float text-pink-200" size={120}/>
+                        <Star className="absolute top-1/4 left-1/3 animate-pulse text-yellow-200" size={24}/>
+                        <Flower className="absolute bottom-20 left-5 text-blue-200 opacity-50" size={80}/>
+                    </div>
+
+                    {/* Header */}
+                    <header className="pt-12 pb-6 px-6 text-center relative z-10">
+                        <div className="inline-block relative mb-4">
+                            <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border-4 border-white">
+                                <CupSoda size={56} className="text-blue-400" />
+                            </div>
+                            <div className="absolute -top-2 -right-2 bg-pink-400 p-2 rounded-full border-4 border-white shadow-md">
+                                <Heart size={16} className="text-white fill-current" />
+                            </div>
+                        </div>
+                        <h1 className="text-4xl font-black text-blue-900 leading-tight">手搖是信仰 <span className="text-blue-400">2026</span></h1>
+                        <p className="text-blue-400 font-bold flex items-center justify-center gap-2 mt-2">
+                            <Star size={18} className="fill-current text-yellow-300" /> 什麼時候能戒掉呢？ <Star size={18} className="fill-current text-yellow-300" />
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-3 mt-8">
+                            <div className="bg-white/90 p-4 rounded-[1.8rem] shadow-sm border border-white">
+                                <div className="text-[10px] font-black text-slate-300 uppercase">總杯數</div>
+                                <div className="text-lg font-black text-slate-700">{stats.count} 杯</div>
+                            </div>
+                            <div className="bg-white/90 p-4 rounded-[1.8rem] shadow-sm border border-white">
+                                <div className="text-[10px] font-black text-slate-300 uppercase">總開銷</div>
+                                <div className="text-lg font-black text-slate-700">${stats.total}</div>
+                            </div>
+                            <div className="bg-white/90 p-4 rounded-[1.8rem] shadow-sm border border-white">
+                                <div className="text-[10px] font-black text-slate-300 uppercase">最愛店家</div>
+                                <div className="text-xs font-black text-slate-700 truncate">{stats.shop}</div>
+                            </div>
+                            <div className="bg-white/90 p-4 rounded-[1.8rem] shadow-sm border border-white">
+                                <div className="text-[10px] font-black text-slate-300 uppercase">最愛品項</div>
+                                <div className="text-xs font-black text-slate-700 truncate">{stats.item}</div>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Content */}
+                    <main className="px-5 relative z-10">
+                        <div className="bg-white/95 rounded-[3rem] shadow-2xl border-[6px] border-white overflow-hidden p-2">
+                            <div className="flex items-center justify-between px-6 py-4">
+                                <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth()-1, 1))} className="p-2 bg-blue-50 rounded-xl text-blue-400 active:scale-90"><ChevronLeft/></button>
+                                <span className="font-black text-xl text-slate-800 tracking-tighter">{currentDate.getFullYear()} / {currentDate.getMonth()+1}</span>
+                                <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth()+1, 1))} className="p-2 bg-blue-50 rounded-xl text-blue-400 active:scale-90"><ChevronRight/></button>
+                            </div>
+                            
+                            <div className="calendar-grid text-center pb-2 px-4 text-[11px] font-black text-blue-200">
+                                {['S','M','T','W','T','F','S'].map(d => <div key={d} className="py-2">{d}</div>)}
+                            </div>
+                            
+                            <div className="calendar-grid gap-1.5 px-4 pb-10">
+                                {Array.from({ length: firstDayOfMonth(currentDate.getFullYear(), currentDate.getMonth()) }).map((_, i) => <div key={i} />)}
+                                {Array.from({ length: daysInMonth(currentDate.getFullYear(), currentDate.getMonth()) }).map((_, i) => {
+                                    const d = i + 1;
+                                    const ds = formatDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), d));
+                                    const has = records[ds]?.length > 0;
+                                    return (
+                                        <div key={d} onClick={() => { setSelectedDate(ds); setIsModalOpen(true); }} 
+                                            className={`h-12 flex items-center justify-center rounded-2xl font-black text-sm transition-all active:scale-90 ${has ? 'bg-blue-500 text-white shadow-lg' : 'bg-slate-50 text-slate-300 hover:bg-blue-50'}`}>
+                                            {d}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        
+                        <div className="mt-12 mb-10 flex flex-col items-center gap-4">
+                            <div className="flex items-center gap-4 text-blue-300">
+                                <Flower className="animate-spin-slow" size={24}/>
+                                <p className="text-xs font-black tracking-widest bg-white/60 px-6 py-2 rounded-full border border-white">今天的我也要喝得像個富翁一樣可愛 ✨</p>
+                                <Flower className="animate-spin-slow" size={24}/>
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* Bottom Sheet Modal */}
+                    {isModalOpen && (
+                        <div className="fixed inset-0 z-50 flex items-end justify-center bg-blue-900/40 backdrop-blur-sm">
+                            <div className="bg-white w-full max-w-md h-[92vh] rounded-t-[3.5rem] flex flex-col border-t-[10px] border-white animate-in slide-in-from-bottom duration-500">
+                                <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto mt-4 shrink-0" />
+                                <div className="px-10 py-6 flex justify-between items-center shrink-0">
+                                    <h3 className="text-2xl font-black text-slate-800 flex items-center gap-2"><Heart className="text-pink-400 fill-current" /> {selectedDate}</h3>
+                                    <button onClick={() => setIsModalOpen(false)} className="p-2 bg-slate-50 rounded-full text-slate-400 active:scale-90"><X/></button>
+                                </div>
+                                
+                                <div className="px-10 pb-10 overflow-y-auto flex-1 no-scrollbar space-y-8">
+                                    {records[selectedDate]?.map(r => (
+                                        <div key={r.id} className="bg-slate-50 p-5 rounded-[2.5rem] flex justify-between items-center border border-slate-100 shadow-sm transition-all active:scale-95">
+                                            <div>
+                                                <div className="font-black text-slate-800 text-lg leading-tight">{r.shop} / {r.item}</div>
+                                                <div className="flex gap-2 mt-2">
+                                                    <span className="text-[10px] font-black bg-blue-100 text-blue-500 px-3 py-1 rounded-full">{r.ice}</span>
+                                                    <span className="text-[10px] font-black bg-blue-100 text-blue-500 px-3 py-1 rounded-full">{r.sweetness}</span>
+                                                    <span className="text-[10px] font-black bg-pink-400 text-white px-3 py-1 rounded-full shadow-sm">${r.price}</span>
+                                                </div>
+                                            </div>
+                                            <button onClick={() => handleDelete(r.id)} className="p-3.5 bg-white text-pink-300 rounded-2xl shadow-sm hover:bg-pink-500 hover:text-white"><Trash2 size={22}/></button>
+                                        </div>
+                                    ))}
+
+                                    <div className="bg-white p-7 rounded-[3rem] border-4 border-blue-50 shadow-2xl space-y-6">
+                                        <h4 className="text-center font-black text-blue-900 uppercase tracking-widest text-lg">收藏這一杯美好 ✨</h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <input type="text" placeholder="店家名稱" value={form.shop} onChange={e => setForm({...form, shop:e.target.value})} className="bg-slate-50 border-none rounded-2xl px-5 py-4 font-bold outline-none text-slate-800 placeholder:text-slate-300" />
+                                            <input type="text" placeholder="飲料品項" value={form.item} onChange={e => setForm({...form, item:e.target.value})} className="bg-slate-50 border-none rounded-2xl px-5 py-4 font-bold outline-none text-slate-800 placeholder:text-slate-300" />
+                                        </div>
+                                        
+                                        <div>
+                                            <label className="text-[10px] font-black text-slate-300 ml-4 mb-2 block uppercase tracking-widest">冰塊調整</label>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {iceOptions.map(o => (
+                                                    <button key={o} onClick={() => setForm({...form, ice:o})} className={`py-3 text-[11px] font-black rounded-xl border-2 transition-all ${form.ice===o?'bg-blue-500 text-white border-blue-500 shadow-lg scale-105':'bg-white text-slate-300 border-slate-50'}`}>{o}</button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <label className="text-[10px] font-black text-slate-300 ml-4 mb-2 block uppercase tracking-widest">甜度調整</label>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {sweetnessOptions.map(o => (
+                                                    <button key={o} onClick={() => setForm({...form, sweetness:o})} className={`py-3 text-[11px] font-black rounded-xl border-2 transition-all ${form.sweetness===o?'bg-blue-500 text-white border-blue-500 shadow-lg scale-105':'bg-white text-slate-300 border-slate-50'}`}>{o}</button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="relative">
+                                            <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-slate-200 text-3xl">$</span>
+                                            <input type="number" placeholder="0" value={form.price} onChange={e => setForm({...form, price:e.target.value})} className="w-full bg-slate-50 border-none rounded-[2.5rem] pl-14 pr-6 py-6 font-black text-4xl text-slate-800 outline-none" />
+                                        </div>
+                                        
+                                        <button onClick={handleSave} className="w-full py-6 bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-[2.8rem] font-black text-xl shadow-xl shadow-blue-200 active:scale-95 transition-all flex items-center justify-center gap-3">
+                                            <Heart className="w-6 h-6 fill-current text-pink-200" /> 收藏這一杯美好 ✨
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
