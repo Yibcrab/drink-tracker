@@ -80,16 +80,11 @@
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
             ),
-            // --- 重新繪製的完美珍奶杯 ---
             CupSoda: ({size=24, className=""}) => (
                 <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                    {/* 吸管 */}
                     <path d="M12 2v6" />
-                    {/* 杯蓋 */}
                     <path d="M5 8h14" />
-                    {/* 杯身 */}
                     <path d="M6 8v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8" />
-                    {/* 珍珠 (用圓圈表示) */}
                     <circle cx="10" cy="16" r="1" fill="currentColor" />
                     <circle cx="14" cy="16" r="1" fill="currentColor" />
                     <circle cx="12" cy="18" r="1" fill="currentColor" />
@@ -166,8 +161,9 @@
             const [isModalOpen, setIsModalOpen] = useState(false);
             const [form, setForm] = useState({ shop: '', item: '', price: '', ice: '微冰', sweetness: '微糖' });
             
-            const iceOptions = ["正常", "少冰", "微冰", "去冰", "常溫"];
-            const sweetnessOptions = ["全糖", "半糖", "微糖", "無糖"];
+            // 選項設定
+            const iceOptions = ["正常", "少冰", "微冰", "去冰", "常溫", "無法調整"];
+            const sweetnessOptions = ["全糖", "半糖", "微糖", "無糖", "無法調整"];
 
             useEffect(() => {
                 const saved = localStorage.getItem('drink_faith_2026_final_v2');
@@ -209,7 +205,7 @@
             const firstDay = (y, m) => new Date(y, m, 1).getDay();
 
             return (
-                <div className="min-h-screen relative pb-20 no-scrollbar overflow-x-hidden select-none">
+                <div className="min-h-screen bg-[#F0F7FF] relative pb-20 no-scrollbar overflow-x-hidden select-none">
                     {/* 背景可愛花花裝飾 */}
                     <div className="fixed inset-0 pointer-events-none z-0 opacity-30">
                         <div className="absolute top-10 left-10 animate-spin-slow text-blue-300">
@@ -242,7 +238,7 @@
                             <h1 className="text-4xl font-black text-blue-900 tracking-tight text-center">手搖是信仰 2026</h1>
                             <p className="text-blue-400 font-bold text-sm mt-4 flex items-center justify-center gap-2">
                                 <Icons.Star size={16} fill="currentColor" className="text-yellow-300" />
-                                什麼時候能戒掉呢
+                                喝下去的每一口都是靈魂 ✨
                                 <Icons.Star size={16} fill="currentColor" className="text-yellow-300" />
                             </p>
 
@@ -310,7 +306,7 @@
                             
                             <div className="mt-14 mb-10 text-center">
                                 <p className="text-xs font-black text-blue-300/80 flex items-center justify-center gap-3 tracking-widest uppercase bg-white/40 inline-block px-8 py-3 rounded-full border border-white">
-                                    <Icons.Flower size={16} /> 今天先喝一杯，明天開始一定戒 ! <Icons.Flower size={16} />
+                                    <Icons.Flower size={16} /> 紀錄專屬 2026 的美好 <Icons.Flower size={16} />
                                 </p>
                             </div>
                         </main>
@@ -352,7 +348,7 @@
 
                                     <div className="bg-white p-8 rounded-[4rem] border-[8px] border-blue-50 shadow-inner space-y-8">
                                         <h4 className="text-center font-black text-blue-900 tracking-widest uppercase text-base flex items-center justify-center gap-2">
-                                            <Icons.Coffee size={20} /> 今天喝了什麼✨
+                                            <Icons.Coffee size={20} /> 收藏這一杯美好 ✨
                                         </h4>
                                         
                                         <div className="grid grid-cols-2 gap-5">
@@ -368,15 +364,37 @@
                                             </div>
                                         </div>
 
+                                        {/* 冰塊調整區塊 - 果凍格設計 */}
                                         <div className="space-y-4">
-                                            <label className="text-[11px] font-black text-slate-300 ml-6 uppercase">冰塊 / 甜度</label>
-                                            <div className="flex gap-4">
-                                                <select value={form.ice} onChange={e => setForm({...form, ice: e.target.value})} className="flex-1 bg-slate-50 border-none rounded-[1.5rem] px-6 py-5 font-bold text-slate-600 outline-none cursor-pointer">
-                                                    {iceOptions.map(o => <option key={o} value={o}>{o}</option>)}
-                                                </select>
-                                                <select value={form.sweetness} onChange={e => setForm({...form, sweetness: e.target.value})} className="flex-1 bg-slate-50 border-none rounded-[1.5rem] px-6 py-5 font-bold text-slate-600 outline-none cursor-pointer">
-                                                    {sweetnessOptions.map(o => <option key={o} value={o}>{o}</option>)}
-                                                </select>
+                                            <label className="text-[11px] font-black text-slate-300 ml-6 uppercase">冰塊調整</label>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                {iceOptions.map(o => (
+                                                    <button key={o} onClick={() => setForm({...form, ice: o})}
+                                                        className={`py-3 text-[11px] font-black rounded-2xl border-2 transition-all duration-200 ${
+                                                            form.ice === o 
+                                                            ? 'bg-blue-400 text-white border-blue-400 shadow-md transform scale-105' 
+                                                            : 'bg-blue-50 text-blue-300 border-blue-100 hover:bg-blue-100'
+                                                        }`}>
+                                                        {o}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* 甜度調整區塊 - 果凍格設計 */}
+                                        <div className="space-y-4">
+                                            <label className="text-[11px] font-black text-slate-300 ml-6 uppercase">甜度調整</label>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                {sweetnessOptions.map(o => (
+                                                    <button key={o} onClick={() => setForm({...form, sweetness: o})}
+                                                        className={`py-3 text-[11px] font-black rounded-2xl border-2 transition-all duration-200 ${
+                                                            form.sweetness === o 
+                                                            ? 'bg-pink-400 text-white border-pink-400 shadow-md transform scale-105' 
+                                                            : 'bg-pink-50 text-pink-300 border-pink-100 hover:bg-pink-100'
+                                                        }`}>
+                                                        {o}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
 
@@ -387,7 +405,7 @@
                                         </div>
 
                                         <button onClick={handleSave} className="w-full py-8 bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-[3.5rem] font-black text-2xl shadow-xl shadow-blue-100 active:scale-95 transition-all flex items-center justify-center gap-5">
-                                            <Icons.Heart size={28} fill="currentColor" className="text-pink-200" /> 收藏這一杯
+                                            <Icons.Heart size={28} fill="currentColor" className="text-pink-200" /> 紀錄這份信仰
                                         </button>
                                     </div>
                                 </div>
