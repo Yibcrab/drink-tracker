@@ -9,13 +9,11 @@
     <meta name="mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#F0F7FF">
 
-    <!-- 載入核心零件：Tailwind, React, Babel, Lucide (核心版) -->
+    <!-- 載入核心零件：Tailwind, React, Babel -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- 使用最穩定的 Lucide 核心庫 -->
-    <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
@@ -53,34 +51,115 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
+        // --- 內建圖標集 (不再依賴外部庫，保證顯示) ---
+        const Icons = {
+            Flower: ({size=24, className=""}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    <path d="M12 7.5a4.5 4.5 0 1 1 4.5 4.5M12 7.5A4.5 4.5 0 1 0 7.5 12M12 7.5V9m-4.5 3a4.5 4.5 0 1 1 4.5-4.5M7.5 12H9m3 4.5a4.5 4.5 0 1 1-4.5-4.5M12 16.5V15m4.5-3a4.5 4.5 0 1 1-4.5 4.5M16.5 12H15" />
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="m8 16 1.5-1.5" />
+                    <path d="M14.5 9.5 16 8" />
+                    <path d="m8 8 1.5 1.5" />
+                    <path d="M14.5 14.5 16 16" />
+                </svg>
+            ),
+            Star: ({size=24, className="", fill="none"}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+            ),
+            // 修正後的手搖杯圖標：線條直挺，像一杯珍珠奶茶
+            CupSoda: ({size=24, className=""}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {/* 杯身 */}
+                    <path d="M7 10v10a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V10" />
+                    {/* 杯蓋 */}
+                    <path d="M17 10H7l-1-4h12l-1 4z" />
+                    {/* 吸管 */}
+                    <line x1="12" x2="12" y1="2" y2="6" />
+                </svg>
+            ),
+            Heart: ({size=24, className="", fill="none"}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                </svg>
+            ),
+            BarChart3: ({size=24, className=""}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    <path d="M3 3v18h18" />
+                    <path d="M18 17V9" />
+                    <path d="M13 17V5" />
+                    <path d="M8 17v-3" />
+                </svg>
+            ),
+            DollarSign: ({size=24, className=""}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    <line x1="12" x2="12" y1="2" y2="22" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+            ),
+            Store: ({size=24, className=""}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7" />
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                    <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
+                    <path d="M2 7h20" />
+                    <path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7" />
+                </svg>
+            ),
+            ChevronLeft: ({size=24, className=""}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    <path d="m15 18-6-6 6-6" />
+                </svg>
+            ),
+            ChevronRight: ({size=24, className=""}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    <path d="m9 18 6-6-6-6" />
+                </svg>
+            ),
+            X: ({size=24, className=""}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 18 18" />
+                </svg>
+            ),
+            Trash2: ({size=24, className=""}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    <path d="M3 6h18" />
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                    <line x1="10" x2="10" y1="11" y2="17" />
+                    <line x1="14" x2="14" y1="11" y2="17" />
+                </svg>
+            ),
+            Coffee: ({size=24, className=""}) => (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
+                    <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+                    <line x1="6" x2="6" y1="2" y2="4" />
+                    <line x1="10" x2="10" y1="2" y2="4" />
+                    <line x1="14" x2="14" y1="2" y2="4" />
+                </svg>
+            )
+        };
+
         const App = () => {
             const [records, setRecords] = useState({});
             const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 1));
             const [selectedDate, setSelectedDate] = useState(null);
             const [isModalOpen, setIsModalOpen] = useState(false);
-            const [lucideReady, setLucideReady] = useState(false);
             
             // 表單狀態
             const [form, setForm] = useState({ shop: '', item: '', price: '', ice: '微冰', sweetness: '微糖' });
             const iceOptions = ["正常", "少冰", "微冰", "去冰", "常溫"];
             const sweetnessOptions = ["全糖", "半糖", "微糖", "無糖"];
 
-            // 1. 初始化：讀取資料並檢查 Lucide 是否準備好
+            // 1. 初始化：讀取資料
             useEffect(() => {
                 const saved = localStorage.getItem('drink_faith_2026_final_stable');
                 if (saved) {
                     try { setRecords(JSON.parse(saved)); } catch (e) { console.error(e); }
                 }
-
-                // 檢查 Lucide 是否載入完成
-                const checkLucide = () => {
-                    if (window.lucide) {
-                        setLucideReady(true);
-                    } else {
-                        setTimeout(checkLucide, 100);
-                    }
-                };
-                checkLucide();
             }, []);
 
             // 2. 統計數據
@@ -118,62 +197,24 @@
             const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
             const firstDay = (y, m) => new Date(y, m, 1).getDay();
 
-            /** * 極致穩定圖標組件
-             * 修正 Lucide 渲染邏輯並強制 kebab-case
-             */
-            const Icon = ({ name, size=24, className="", fill="none" }) => {
-                const [iconData, setIconData] = useState(null);
-
-                useEffect(() => {
-                    if (window.lucide && window.lucide.icons[name]) {
-                        setIconData(window.lucide.icons[name]);
-                    }
-                }, [name, lucideReady]);
-                
-                if (!iconData) return <div style={{width: size, height: size}} className={className} />;
-
-                const [tag, attrs, children] = iconData;
-
-                return (
-                    <svg
-                        width={size}
-                        height={size}
-                        viewBox="0 0 24 24"
-                        fill={fill}
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className={className}
-                    >
-                        {children.map((child, index) => (
-                            React.createElement(child[0], { key: index, ...child[1] })
-                        ))}
-                    </svg>
-                );
-            };
-
             return (
                 <div className="min-h-screen bg-[#F0F7FF] relative pb-20 no-scrollbar overflow-x-hidden select-none">
                     {/* 背景可愛花花裝飾 - 補得更滿 */}
                     <div className="fixed inset-0 pointer-events-none z-0 opacity-30">
                         <div className="absolute top-10 left-10 animate-spin-slow text-blue-300">
-                            <Icon name="flower" size={80} />
+                            <Icons.Flower size={80} />
                         </div>
-                        <div className="absolute top-[15%] right-[10%] text-pink-300 animate-float">
-                            <Icon name="flower" size={100} />
+                        <div className="absolute top-1/4 right-[-20px] text-pink-300 animate-float">
+                            <Icons.Flower size={120} />
                         </div>
-                        <div className="absolute top-[40%] left-[-20px] text-blue-200 animate-bounce" style={{animationDuration: '6s'}}>
-                            <Icon name="flower" size={70} />
+                        <div className="absolute bottom-40 left-[-10px] text-blue-200 animate-bounce" style={{animationDuration: '5s'}}>
+                            <Icons.Flower size={60} />
                         </div>
-                        <div className="absolute bottom-[20%] right-[-10px] animate-spin-slow text-pink-200" style={{animationDuration: '25s'}}>
-                            <Icon name="flower" size={120} />
+                        <div className="absolute bottom-10 right-20 animate-spin-slow text-pink-200" style={{animationDuration: '20s'}}>
+                            <Icons.Flower size={90} />
                         </div>
-                        <div className="absolute bottom-10 left-20 text-blue-100 opacity-50">
-                            <Icon name="flower" size={60} />
-                        </div>
-                        <div className="absolute top-1/2 left-1/3 text-yellow-200 opacity-40">
-                            <Icon name="star" size={40} fill="currentColor" />
+                        <div className="absolute top-1/2 left-1/4 text-yellow-200 opacity-40">
+                            <Icons.Star size={40} fill="currentColor" />
                         </div>
                     </div>
 
@@ -181,32 +222,32 @@
                         <header className="pt-12 pb-6 px-6 text-center">
                             <div className="inline-block bg-white p-7 rounded-[3.5rem] shadow-2xl border-4 border-white mb-6 relative">
                                 <div className="text-blue-400">
-                                    <Icon name="cup-soda" size={64} />
+                                    <Icons.CupSoda size={64} />
                                 </div>
                                 <div className="absolute -top-3 -right-3 bg-pink-400 p-2.5 rounded-full border-4 border-white shadow-lg">
-                                    <Icon name="heart" size={20} fill="currentColor" className="text-white" />
+                                    <Icons.Heart size={20} fill="currentColor" className="text-white" />
                                 </div>
                             </div>
                             <h1 className="text-4xl font-black text-blue-900 tracking-tight text-center">手搖是信仰 2026</h1>
                             <p className="text-blue-400 font-bold text-sm mt-4 flex items-center justify-center gap-2">
-                                <Icon name="star" size={16} fill="currentColor" className="text-yellow-300" />
-                                喝下去的每一口都是靈魂 ✨
-                                <Icon name="star" size={16} fill="currentColor" className="text-yellow-300" />
+                                <Icons.Star size={16} fill="currentColor" className="text-yellow-300" />
+                                什麼時候能戒掉呢
+                                <Icons.Star size={16} fill="currentColor" className="text-yellow-300" />
                             </p>
 
                             <div className="grid grid-cols-3 gap-3 mt-10 px-2">
                                 <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-sm border border-white flex flex-col items-center">
-                                    <Icon name="bar-chart-3" size={22} className="text-blue-300 mb-1" />
+                                    <Icons.BarChart3 size={22} className="text-blue-300 mb-1" />
                                     <span className="text-[10px] font-black text-slate-300 uppercase">總杯數</span>
                                     <span className="text-base font-black text-slate-700">{stats.count} 杯</span>
                                 </div>
                                 <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-sm border border-white flex flex-col items-center">
-                                    <Icon name="dollar-sign" size={22} className="text-pink-300 mb-1" />
+                                    <Icons.DollarSign size={22} className="text-pink-300 mb-1" />
                                     <span className="text-[10px] font-black text-slate-300 uppercase">總開銷</span>
                                     <span className="text-base font-black text-slate-700">${stats.total}</span>
                                 </div>
                                 <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-sm border border-white flex flex-col items-center overflow-hidden text-center">
-                                    <Icon name="store" size={22} className="text-blue-300 mb-1" />
+                                    <Icons.Store size={22} className="text-blue-300 mb-1" />
                                     <span className="text-[10px] font-black text-slate-300 uppercase">最愛店</span>
                                     <span className="text-[10px] font-black text-slate-700 truncate w-full px-1">{stats.topShop}</span>
                                 </div>
@@ -217,13 +258,13 @@
                             <div className="bg-white/95 backdrop-blur-md rounded-[4rem] shadow-2xl border-[12px] border-white overflow-hidden p-1 shadow-blue-100/50">
                                 <div className="flex items-center justify-between px-8 py-7 bg-blue-50/40">
                                     <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="p-2 text-blue-400 active:scale-75 transition-transform">
-                                        <Icon name="chevron-left" size={32} />
+                                        <Icons.ChevronLeft size={32} />
                                     </button>
                                     <h2 className="text-2xl font-black text-slate-800 tracking-widest text-center">
                                         {currentDate.getFullYear()} / {currentDate.getMonth() + 1}
                                     </h2>
                                     <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} className="p-2 text-blue-400 active:scale-75 transition-transform">
-                                        <Icon name="chevron-right" size={32} />
+                                        <Icons.ChevronRight size={32} />
                                     </button>
                                 </div>
                                 
@@ -258,7 +299,7 @@
                             
                             <div className="mt-14 mb-10 text-center">
                                 <p className="text-xs font-black text-blue-300/80 flex items-center justify-center gap-3 tracking-widest uppercase bg-white/40 inline-block px-8 py-3 rounded-full border border-white">
-                                    <Icon name="flower" size={16} /> 紀錄專屬 2026 的美好 <Icon name="flower" size={16} />
+                                    <Icons.Flower size={16} /> 今天先喝一杯，明天開始一定戒 ! <Icons.Flower size={16} />
                                 </p>
                             </div>
                         </main>
@@ -271,11 +312,11 @@
                                 
                                 <div className="px-10 py-8 flex justify-between items-center shrink-0">
                                     <div className="flex items-center gap-4 text-slate-800">
-                                        <Icon name="heart" size={28} fill="currentColor" className="text-pink-400" />
+                                        <Icons.Heart size={28} fill="currentColor" className="text-pink-400" />
                                         <h3 className="text-2xl font-black">{selectedDate}</h3>
                                     </div>
                                     <button onClick={() => setIsModalOpen(false)} className="p-3 bg-slate-50 text-slate-400 rounded-full active:scale-90 transition-transform">
-                                        <Icon name="x" size={28} />
+                                        <Icons.X size={28} />
                                     </button>
                                 </div>
 
@@ -292,7 +333,7 @@
                                                     </div>
                                                 </div>
                                                 <button onClick={() => handleDelete(r.id)} className="p-4 bg-white text-pink-300 rounded-[1.8rem] shadow-sm active:bg-pink-500 active:text-white transition-all">
-                                                    <Icon name="trash-2" size={24} />
+                                                    <Icons.Trash2 size={24} />
                                                 </button>
                                             </div>
                                         ))}
@@ -300,7 +341,7 @@
 
                                     <div className="bg-white p-8 rounded-[4rem] border-[8px] border-blue-50 shadow-inner space-y-8">
                                         <h4 className="text-center font-black text-blue-900 tracking-widest uppercase text-base flex items-center justify-center gap-2">
-                                            <Icon name="coffee" size={20} /> 收藏這一杯美好 ✨
+                                            <Icons.Coffee size={20} /> 收藏這一杯✨
                                         </h4>
                                         
                                         <div className="grid grid-cols-2 gap-5">
@@ -335,7 +376,7 @@
                                         </div>
 
                                         <button onClick={handleSave} className="w-full py-8 bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-[3.5rem] font-black text-2xl shadow-xl shadow-blue-100 active:scale-95 transition-all flex items-center justify-center gap-5">
-                                            <Icon name="heart" size={28} fill="currentColor" className="text-pink-200" /> 紀錄這份信仰
+                                            <Icons.Heart size={28} fill="currentColor" className="text-pink-200" /> 紀錄這份信仰
                                         </button>
                                     </div>
                                 </div>
