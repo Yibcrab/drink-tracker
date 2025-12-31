@@ -2,14 +2,19 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <!-- 關鍵設定：這行讓它在 iPhone/Android 都會自動適應螢幕，避開瀏海 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>手搖是信仰 2026</title>
-    <!-- APP 模式設定 -->
+    
+    <!-- iOS 專屬設定：讓它像原生 App -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="手搖信仰">
+    
+    <!-- Android 專屬設定 -->
     <meta name="theme-color" content="#F0F7FF">
 
-    <!-- 載入核心零件：Tailwind, React, Babel -->
+    <!-- 載入核心零件 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -17,31 +22,38 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        
         body { 
             font-family: 'Noto Sans TC', sans-serif; 
+            /* 這裡鎖死了你最愛的藍色背景，絕對不會變黑 */
             background-color: #F0F7FF; 
             margin: 0; padding: 0; 
             overflow: hidden; 
-            position: fixed; width: 100%; height: 100%; 
+            position: fixed; width: 100%; height: 100%;
+            /* iOS 安全區域設定 */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
+        
         #root { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        
         @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin-slow { animation: spin-slow 15s linear infinite; }
-        * { -webkit-tap-highlight-color: transparent; outline: none; }
         
-        /* 自定義動畫：漂浮感 */
         @keyframes float {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
         }
         .animate-float { animation: float 4s ease-in-out infinite; }
+        
+        * { -webkit-tap-highlight-color: transparent; outline: none; }
     </style>
 </head>
 <body>
     <div id="root">
         <!-- 預載入畫面 -->
-        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#F0F7FF;">
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh;">
             <div style="width:40px; height:40px; border:4px solid #DBEAFE; border-top:4px solid #3B82F6; border-radius:50%; animation: spin-slow 1s linear infinite;"></div>
             <p style="color:#60A5FA; font-weight:900; margin-top:20px;">信仰啟動中...</p>
         </div>
@@ -68,15 +80,19 @@
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                 </svg>
             ),
-            // 修正後的手搖杯圖標：線條直挺，像一杯珍珠奶茶
+            // --- 重新繪製的完美珍奶杯 ---
             CupSoda: ({size=24, className=""}) => (
                 <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                    {/* 杯身 */}
-                    <path d="M7 10v10a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V10" />
-                    {/* 杯蓋 */}
-                    <path d="M17 10H7l-1-4h12l-1 4z" />
                     {/* 吸管 */}
-                    <line x1="12" x2="12" y1="2" y2="6" />
+                    <path d="M12 2v6" />
+                    {/* 杯蓋 */}
+                    <path d="M5 8h14" />
+                    {/* 杯身 */}
+                    <path d="M6 8v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8" />
+                    {/* 珍珠 (用圓圈表示) */}
+                    <circle cx="10" cy="16" r="1" fill="currentColor" />
+                    <circle cx="14" cy="16" r="1" fill="currentColor" />
+                    <circle cx="12" cy="18" r="1" fill="currentColor" />
                 </svg>
             ),
             Heart: ({size=24, className="", fill="none"}) => (
@@ -148,21 +164,18 @@
             const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 1));
             const [selectedDate, setSelectedDate] = useState(null);
             const [isModalOpen, setIsModalOpen] = useState(false);
-            
-            // 表單狀態
             const [form, setForm] = useState({ shop: '', item: '', price: '', ice: '微冰', sweetness: '微糖' });
+            
             const iceOptions = ["正常", "少冰", "微冰", "去冰", "常溫"];
             const sweetnessOptions = ["全糖", "半糖", "微糖", "無糖"];
 
-            // 1. 初始化：讀取資料
             useEffect(() => {
-                const saved = localStorage.getItem('drink_faith_2026_final_stable');
+                const saved = localStorage.getItem('drink_faith_2026_final_v2');
                 if (saved) {
                     try { setRecords(JSON.parse(saved)); } catch (e) { console.error(e); }
                 }
             }, []);
 
-            // 2. 統計數據
             const stats = useMemo(() => {
                 const all = Object.values(records).flat();
                 const shops = {};
@@ -175,13 +188,12 @@
                 };
             }, [records]);
 
-            // 3. 儲存與刪除
             const handleSave = () => {
                 if (!form.shop || !form.item || !form.price) return;
                 const newRecord = { ...form, price: Number(form.price), date: selectedDate, id: Date.now().toString() };
                 const updated = { ...records, [selectedDate]: [...(records[selectedDate] || []), newRecord] };
                 setRecords(updated);
-                localStorage.setItem('drink_faith_2026_final_stable', JSON.stringify(updated));
+                localStorage.setItem('drink_faith_2026_final_v2', JSON.stringify(updated));
                 setForm({ shop: '', item: '', price: '', ice: '微冰', sweetness: '微糖' });
                 setIsModalOpen(false);
             };
@@ -190,16 +202,15 @@
                 const updatedDay = records[selectedDate].filter(r => r.id !== id);
                 const updatedAll = { ...records, [selectedDate]: updatedDay };
                 setRecords(updatedAll);
-                localStorage.setItem('drink_faith_2026_final_stable', JSON.stringify(updatedAll));
+                localStorage.setItem('drink_faith_2026_final_v2', JSON.stringify(updatedAll));
             };
 
-            // 日曆邏輯
             const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
             const firstDay = (y, m) => new Date(y, m, 1).getDay();
 
             return (
-                <div className="min-h-screen bg-[#F0F7FF] relative pb-20 no-scrollbar overflow-x-hidden select-none">
-                    {/* 背景可愛花花裝飾 - 補得更滿 */}
+                <div className="min-h-screen relative pb-20 no-scrollbar overflow-x-hidden select-none">
+                    {/* 背景可愛花花裝飾 */}
                     <div className="fixed inset-0 pointer-events-none z-0 opacity-30">
                         <div className="absolute top-10 left-10 animate-spin-slow text-blue-300">
                             <Icons.Flower size={80} />
@@ -218,7 +229,7 @@
                         </div>
                     </div>
 
-                    <div className="relative z-10 max-w-md mx-auto">
+                    <div className="relative z-10 max-w-md mx-auto h-full flex flex-col">
                         <header className="pt-12 pb-6 px-6 text-center">
                             <div className="inline-block bg-white p-7 rounded-[3.5rem] shadow-2xl border-4 border-white mb-6 relative">
                                 <div className="text-blue-400">
@@ -254,7 +265,7 @@
                             </div>
                         </header>
 
-                        <main className="px-5 pb-12">
+                        <main className="px-5 pb-12 flex-1">
                             <div className="bg-white/95 backdrop-blur-md rounded-[4rem] shadow-2xl border-[12px] border-white overflow-hidden p-1 shadow-blue-100/50">
                                 <div className="flex items-center justify-between px-8 py-7 bg-blue-50/40">
                                     <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="p-2 text-blue-400 active:scale-75 transition-transform">
@@ -307,7 +318,7 @@
 
                     {isModalOpen && (
                         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-blue-900/40 backdrop-blur-sm">
-                            <div className="bg-white w-full max-w-md h-[94vh] rounded-t-[4.5rem] shadow-2xl flex flex-col border-t-[14px] border-white animate-in slide-in-from-bottom duration-500">
+                            <div className="bg-white w-full max-w-md h-[94vh] rounded-t-[4.5rem] shadow-2xl flex flex-col border-t-[14px] border-white animate-in slide-in-from-bottom duration-500 pb-[env(safe-area-inset-bottom)]">
                                 <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto mt-5 shrink-0" />
                                 
                                 <div className="px-10 py-8 flex justify-between items-center shrink-0">
