@@ -109,11 +109,13 @@
 
             /** * 修正後的圖標組件
              * 修正了 Lucide 核心庫的圖標渲染邏輯
+             * 並改用更穩定的名稱對應
              */
             const Icon = ({ name, size=24, className="", fill="none" }) => {
-                const iconData = window.lucide ? window.lucide.icons[name] : null;
+                // 嘗試多種名稱格式以適應不同版本的庫
+                const iconData = window.lucide ? (window.lucide.icons[name] || window.lucide.icons[name.toLowerCase()] || window.lucide.icons[name.replace(/([A-Z])/g, "-$1").toLowerCase()]) : null;
                 
-                if (!iconData) return null;
+                if (!iconData) return <span className="text-[10px] opacity-20">?</span>;
 
                 const [tag, attrs, children] = iconData;
 
@@ -161,13 +163,13 @@
                         <header className="pt-12 pb-6 px-6 text-center">
                             <div className="inline-block bg-white p-6 rounded-[3rem] shadow-2xl border-4 border-white mb-4 relative">
                                 <div className="text-blue-400">
-                                    <Icon name="cupSoda" size={64} />
+                                    <Icon name="cup-soda" size={64} />
                                 </div>
                                 <div className="absolute -top-3 -right-3 bg-pink-400 p-2.5 rounded-full border-4 border-white shadow-lg">
                                     <Icon name="heart" size={20} fill="currentColor" className="text-white" />
                                 </div>
                             </div>
-                            <h1 className="text-4xl font-black text-blue-900 tracking-tight">手搖是信仰 2026</h1>
+                            <h1 className="text-4xl font-black text-blue-900 tracking-tight text-center">手搖是信仰 2026</h1>
                             <p className="text-blue-400 font-bold text-sm mt-3 flex items-center justify-center gap-2">
                                 <Icon name="star" size={16} fill="currentColor" className="text-yellow-300" />
                                 今天也要喝得像個富翁 ✨
@@ -176,12 +178,12 @@
 
                             <div className="grid grid-cols-3 gap-3 mt-8 px-2">
                                 <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-sm border border-white flex flex-col items-center">
-                                    <Icon name="barChart3" size={20} className="text-blue-300 mb-1" />
+                                    <Icon name="bar-chart-3" size={20} className="text-blue-300 mb-1" />
                                     <span className="text-[10px] font-black text-slate-300 uppercase">總杯數</span>
                                     <span className="text-sm font-black text-slate-700">{stats.count} 杯</span>
                                 </div>
                                 <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-sm border border-white flex flex-col items-center">
-                                    <Icon name="dollarSign" size={20} className="text-pink-300 mb-1" />
+                                    <Icon name="dollar-sign" size={20} className="text-pink-300 mb-1" />
                                     <span className="text-[10px] font-black text-slate-300 uppercase">總開銷</span>
                                     <span className="text-sm font-black text-slate-700">${stats.total}</span>
                                 </div>
@@ -197,13 +199,13 @@
                             <div className="bg-white/95 backdrop-blur-md rounded-[3.5rem] shadow-2xl border-[10px] border-white overflow-hidden p-1 shadow-blue-100/50">
                                 <div className="flex items-center justify-between px-8 py-6 bg-blue-50/40">
                                     <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="p-2 text-blue-400 active:scale-75 transition-transform">
-                                        <Icon name="chevronLeft" size={32} />
+                                        <Icon name="chevron-left" size={32} />
                                     </button>
-                                    <h2 className="text-2xl font-black text-slate-800 tracking-widest">
+                                    <h2 className="text-2xl font-black text-slate-800 tracking-widest text-center">
                                         {currentDate.getFullYear()} / {currentDate.getMonth() + 1}
                                     </h2>
                                     <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} className="p-2 text-blue-400 active:scale-75 transition-transform">
-                                        <Icon name="chevronRight" size={32} />
+                                        <Icon name="chevron-right" size={32} />
                                     </button>
                                 </div>
                                 
@@ -249,7 +251,7 @@
                             <div className="bg-white w-full max-w-md h-[94vh] rounded-t-[4rem] shadow-2xl flex flex-col border-t-[12px] border-white animate-in slide-in-from-bottom duration-500">
                                 <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto mt-5 shrink-0" />
                                 
-                                <div className="px-10 py-8 flex justify-between items-center">
+                                <div className="px-10 py-8 flex justify-between items-center shrink-0">
                                     <div className="flex items-center gap-4 text-slate-800">
                                         <Icon name="heart" size={28} fill="currentColor" className="text-pink-400" />
                                         <h3 className="text-2xl font-black">{selectedDate}</h3>
@@ -272,7 +274,7 @@
                                                     </div>
                                                 </div>
                                                 <button onClick={() => handleDelete(r.id)} className="p-3.5 bg-white text-pink-300 rounded-[1.5rem] shadow-sm active:bg-pink-500 active:text-white transition-all">
-                                                    <Icon name="trash2" size={22} />
+                                                    <Icon name="trash-2" size={22} />
                                                 </button>
                                             </div>
                                         ))}
