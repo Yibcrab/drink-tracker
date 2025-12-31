@@ -14,7 +14,7 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- 使用 lucide 核心庫而非 lucide-react 以確保在單一檔案環境的穩定性 -->
+    <!-- 使用 lucide 核心庫確保在單一檔案環境的穩定性 -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
@@ -108,20 +108,14 @@
             const firstDay = (y, m) => new Date(y, m, 1).getDay();
 
             /** * 修正後的圖標組件
-             * 由於 lucide-react CDN 常有 forwardRef 問題
-             * 我們改用 lucide 核心庫的手動 SVG 渲染方式，這在單檔案環境下最穩定
+             * 修正了 Lucide 核心庫的圖標渲染邏輯
              */
             const Icon = ({ name, size=24, className="", fill="none" }) => {
-                const [svgPaths, setSvgPaths] = useState([]);
+                const iconData = window.lucide ? window.lucide.icons[name] : null;
+                
+                if (!iconData) return null;
 
-                useEffect(() => {
-                    if (window.lucide && window.lucide.icons[name]) {
-                        // 取得圖標的 path 資料
-                        setSvgPaths(window.lucide.icons[name][1]);
-                    }
-                }, [name]);
-
-                if (svgPaths.length === 0) return <div style={{width: size, height: size}} className={className} />;
+                const [tag, attrs, children] = iconData;
 
                 return (
                     <svg
@@ -135,8 +129,8 @@
                         strokeLinejoin="round"
                         className={className}
                     >
-                        {svgPaths.map((path, index) => (
-                            React.createElement(path[0], { key: index, ...path[1] })
+                        {children.map((child, index) => (
+                            React.createElement(child[0], { key: index, ...child[1] })
                         ))}
                     </svg>
                 );
@@ -144,7 +138,7 @@
 
             return (
                 <div className="min-h-screen bg-[#F0F7FF] relative pb-20 no-scrollbar overflow-x-hidden select-none">
-                    {/* 背景可愛花花裝飾 - 恢復並強化可愛感 */}
+                    {/* 背景可愛花花裝飾 - 恢復可愛圖案 */}
                     <div className="fixed inset-0 pointer-events-none z-0 opacity-30">
                         <div className="absolute top-10 left-10 animate-spin-slow text-blue-300">
                             <Icon name="flower" size={80} />
@@ -167,7 +161,7 @@
                         <header className="pt-12 pb-6 px-6 text-center">
                             <div className="inline-block bg-white p-6 rounded-[3rem] shadow-2xl border-4 border-white mb-4 relative">
                                 <div className="text-blue-400">
-                                    <Icon name="cup-soda" size={64} />
+                                    <Icon name="cupSoda" size={64} />
                                 </div>
                                 <div className="absolute -top-3 -right-3 bg-pink-400 p-2.5 rounded-full border-4 border-white shadow-lg">
                                     <Icon name="heart" size={20} fill="currentColor" className="text-white" />
@@ -182,19 +176,19 @@
 
                             <div className="grid grid-cols-3 gap-3 mt-8 px-2">
                                 <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-sm border border-white flex flex-col items-center">
-                                    <Icon name="bar-chart-3" size={20} className="text-blue-300 mb-1" />
+                                    <Icon name="barChart3" size={20} className="text-blue-300 mb-1" />
                                     <span className="text-[10px] font-black text-slate-300 uppercase">總杯數</span>
                                     <span className="text-sm font-black text-slate-700">{stats.count} 杯</span>
                                 </div>
                                 <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-sm border border-white flex flex-col items-center">
-                                    <Icon name="dollar-sign" size={20} className="text-pink-300 mb-1" />
+                                    <Icon name="dollarSign" size={20} className="text-pink-300 mb-1" />
                                     <span className="text-[10px] font-black text-slate-300 uppercase">總開銷</span>
                                     <span className="text-sm font-black text-slate-700">${stats.total}</span>
                                 </div>
                                 <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-sm border border-white flex flex-col items-center overflow-hidden text-center">
                                     <Icon name="store" size={20} className="text-blue-300 mb-1" />
                                     <span className="text-[10px] font-black text-slate-300 uppercase">最愛店</span>
-                                    <span className="text-[10px] font-black text-slate-700 truncate w-full">{stats.topShop}</span>
+                                    <span className="text-[10px] font-black text-slate-700 truncate w-full px-1">{stats.topShop}</span>
                                 </div>
                             </div>
                         </header>
@@ -203,13 +197,13 @@
                             <div className="bg-white/95 backdrop-blur-md rounded-[3.5rem] shadow-2xl border-[10px] border-white overflow-hidden p-1 shadow-blue-100/50">
                                 <div className="flex items-center justify-between px-8 py-6 bg-blue-50/40">
                                     <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="p-2 text-blue-400 active:scale-75 transition-transform">
-                                        <Icon name="chevron-left" size={32} />
+                                        <Icon name="chevronLeft" size={32} />
                                     </button>
                                     <h2 className="text-2xl font-black text-slate-800 tracking-widest">
                                         {currentDate.getFullYear()} / {currentDate.getMonth() + 1}
                                     </h2>
                                     <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} className="p-2 text-blue-400 active:scale-75 transition-transform">
-                                        <Icon name="chevron-right" size={32} />
+                                        <Icon name="chevronRight" size={32} />
                                     </button>
                                 </div>
                                 
@@ -278,7 +272,7 @@
                                                     </div>
                                                 </div>
                                                 <button onClick={() => handleDelete(r.id)} className="p-3.5 bg-white text-pink-300 rounded-[1.5rem] shadow-sm active:bg-pink-500 active:text-white transition-all">
-                                                    <Icon name="trash-2" size={22} />
+                                                    <Icon name="trash2" size={22} />
                                                 </button>
                                             </div>
                                         ))}
