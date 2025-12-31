@@ -4,17 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>手搖是信仰 2026</title>
-    <!-- App 體驗設定 -->
+    <!-- APP 模式設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#F8FBFF">
-    
+    <meta name="theme-color" content="#F0F7FF">
+
+    <!-- 載入核心零件：Tailwind, React, Babel, Lucide (核心版) -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- 使用 lucide 核心庫而非 lucide-react 以確保在單一檔案環境的穩定性 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
         body { 
             font-family: 'Noto Sans TC', sans-serif; 
-            background: #F8FBFF; 
+            background-color: #F0F7FF; 
             margin: 0; padding: 0; 
             overflow: hidden; 
             position: fixed; width: 100%; height: 100%; 
@@ -24,245 +31,307 @@
         @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin-slow { animation: spin-slow 15s linear infinite; }
         * { -webkit-tap-highlight-color: transparent; outline: none; }
-
-        /* 載入畫面樣式 */
-        #loading-screen {
-            position: fixed; inset: 0; background: #F8FBFF;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 1000; transition: opacity 0.5s ease;
+        
+        /* 自定義動畫：漂浮感 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
-        .loader {
-            width: 45px; height: 45px; border: 5px solid #DBEAFE; border-top-color: #3B82F6;
-            border-radius: 50%; animation: spin-slow 1s linear infinite;
-        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
     </style>
 </head>
 <body>
-    <!-- 1. 載入與檢查畫面 -->
-    <div id="loading-screen">
-        <div class="loader"></div>
-        <p id="load-status" style="color:#60A5FA; font-weight:900; margin-top:20px; letter-spacing:0.1em;">正在檢查信仰零件...</p>
-        <button id="manual-start" style="display:none; margin-top:20px; color:#3B82F6; text-decoration:underline; font-size:12px;" onclick="forceStart()">點擊手動進入 App</button>
+    <div id="root">
+        <!-- 預載入畫面 -->
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background:#F0F7FF;">
+            <div style="width:40px; height:40px; border:4px solid #DBEAFE; border-top:4px solid #3B82F6; border-radius:50%; animation: spin-slow 1s linear infinite;"></div>
+            <p style="color:#60A5FA; font-weight:900; margin-top:20px;">信仰啟動中...</p>
+        </div>
     </div>
 
-    <div id="root"></div>
+    <!-- React 程式碼區塊 -->
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
 
-    <!-- 2. 載入零件 (使用備援 CDN) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/umd/lucide.min.js" crossorigin="anonymous"></script>
+        const App = () => {
+            const [records, setRecords] = useState({});
+            const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 1));
+            const [selectedDate, setSelectedDate] = useState(null);
+            const [isModalOpen, setIsModalOpen] = useState(false);
+            
+            // 表單狀態
+            const [form, setForm] = useState({ shop: '', item: '', price: '', ice: '微冰', sweetness: '微糖' });
+            const iceOptions = ["正常", "少冰", "微冰", "去冰", "常溫"];
+            const sweetnessOptions = ["全糖", "半糖", "微糖", "無糖"];
 
-    <script>
-        const statusEl = document.getElementById('load-status');
-        const manualBtn = document.getElementById('manual-start');
+            // 1. 初始化：讀取資料
+            useEffect(() => {
+                const saved = localStorage.getItem('drink_faith_2026_final_stable');
+                if (saved) {
+                    try { setRecords(JSON.parse(saved)); } catch (e) { console.error(e); }
+                }
+            }, []);
 
-        // 核心檢查：零件到齊後啟動
-        window.onload = function() {
-            if (window.React && window.ReactDOM && window.htm) {
-                statusEl.innerHTML = "零件檢查完畢 ✨";
-                setTimeout(startApp, 300); // 稍微延遲讓用戶看到狀態
-            } else {
-                statusEl.innerHTML = "零件載入失敗，請檢查網路 ❌";
-                manualBtn.style.display = 'block';
-            }
-        };
+            // 2. 統計數據
+            const stats = useMemo(() => {
+                const all = Object.values(records).flat();
+                const shops = {};
+                all.forEach(r => { if (r.shop) shops[r.shop] = (shops[r.shop] || 0) + 1; });
+                const topShop = Object.entries(shops).sort((a, b) => b[1] - a[1])[0]?.[0] || '尚未紀錄';
+                return {
+                    count: all.length,
+                    total: all.reduce((sum, r) => sum + (Number(r.price) || 0), 0),
+                    topShop
+                };
+            }, [records]);
 
-        function forceStart() {
-            const screen = document.getElementById('loading-screen');
-            if (screen) screen.style.display = 'none';
-        }
+            // 3. 儲存與刪除
+            const handleSave = () => {
+                if (!form.shop || !form.item || !form.price) return;
+                const newRecord = { ...form, price: Number(form.price), date: selectedDate, id: Date.now().toString() };
+                const updated = { ...records, [selectedDate]: [...(records[selectedDate] || []), newRecord] };
+                setRecords(updated);
+                localStorage.setItem('drink_faith_2026_final_stable', JSON.stringify(updated));
+                setForm({ shop: '', item: '', price: '', ice: '微冰', sweetness: '微糖' });
+                setIsModalOpen(false);
+            };
 
-        function startApp() {
-            // 防止重複啟動
-            if (window.isAppStarted) return;
-            window.isAppStarted = true;
+            const handleDelete = (id) => {
+                const updatedDay = records[selectedDate].filter(r => r.id !== id);
+                const updatedAll = { ...records, [selectedDate]: updatedDay };
+                setRecords(updatedAll);
+                localStorage.setItem('drink_faith_2026_final_stable', JSON.stringify(updatedAll));
+            };
 
-            const html = htm.bind(React.createElement);
-            const { useState, useEffect, useMemo } = React;
+            // 日曆邏輯
+            const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
+            const firstDay = (y, m) => new Date(y, m, 1).getDay();
 
-            const App = () => {
-                const [records, setRecords] = useState({}); 
-                const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 1));
-                const [selectedDate, setSelectedDate] = useState(null);
-                const [isModalOpen, setIsModalOpen] = useState(false);
-                
-                const iceOptions = ["正常", "少冰", "微冰", "去冰", "常溫", "溫"];
-                const sweetnessOptions = ["全糖", "少糖", "半糖", "微糖", "一分糖", "無糖"];
-                const [form, setForm] = useState({ shop: '', item: '', ice: '微冰', sweetness: '微糖', price: '' });
+            /** * 修正後的圖標組件
+             * 由於 lucide-react CDN 常有 forwardRef 問題
+             * 我們改用 lucide 核心庫的手動 SVG 渲染方式，這在單檔案環境下最穩定
+             */
+            const Icon = ({ name, size=24, className="", fill="none" }) => {
+                const [svgPaths, setSvgPaths] = useState([]);
 
                 useEffect(() => {
-                    // 組件掛載後隱藏載入畫面
-                    const screen = document.getElementById('loading-screen');
-                    if (screen) screen.style.opacity = '0';
-                    setTimeout(() => { if (screen) screen.style.display = 'none'; }, 500);
-
-                    const saved = localStorage.getItem('my_drink_faith_2026');
-                    if (saved) {
-                        try { setRecords(JSON.parse(saved)); } catch(e) { console.error("Data error", e); }
+                    if (window.lucide && window.lucide.icons[name]) {
+                        // 取得圖標的 path 資料
+                        setSvgPaths(window.lucide.icons[name][1]);
                     }
-                }, []);
+                }, [name]);
 
-                const stats = useMemo(() => {
-                    const all = Object.values(records).flat();
-                    const shops = {}, items = {};
-                    all.forEach(r => {
-                        shops[r.shop] = (shops[r.shop] || 0) + 1;
-                        items[r.item] = (items[r.item] || 0) + 1;
-                    });
-                    const getTop = (obj) => Object.entries(obj).sort((a,b)=>b[1]-a[1])[0]?.[0] || '無';
-                    return {
-                        count: all.length,
-                        total: all.reduce((sum, r) => sum + (Number(r.price) || 0), 0),
-                        shop: getTop(shops),
-                        item: getTop(items)
-                    };
-                }, [records]);
+                if (svgPaths.length === 0) return <div style={{width: size, height: size}} className={className} />;
 
-                const handleSave = () => {
-                    if (!form.shop || !form.item || !form.price) return;
-                    const newRecord = { ...form, price: Number(form.price), date: selectedDate, id: Date.now().toString() };
-                    const updated = { ...records, [selectedDate]: [...(records[selectedDate] || []), newRecord] };
-                    setRecords(updated);
-                    localStorage.setItem('my_drink_faith_2026', JSON.stringify(updated));
-                    setForm({ shop: '', item: '', ice: '微冰', sweetness: '微糖', price: '' });
-                    setIsModalOpen(false);
-                };
+                return (
+                    <svg
+                        width={size}
+                        height={size}
+                        viewBox="0 0 24 24"
+                        fill={fill}
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={className}
+                    >
+                        {svgPaths.map((path, index) => (
+                            React.createElement(path[0], { key: index, ...path[1] })
+                        ))}
+                    </svg>
+                );
+            };
 
-                const handleDelete = (id) => {
-                    const updatedDay = records[selectedDate].filter(r => r.id !== id);
-                    const updatedAll = { ...records, [selectedDate]: updatedDay };
-                    setRecords(updatedAll);
-                    localStorage.setItem('my_drink_faith_2026', JSON.stringify(updatedAll));
-                };
-
-                const Icon = (name, size=24, className="") => {
-                    if (window.lucide && window.lucide[name]) {
-                        return React.createElement(window.lucide[name], { size, className });
-                    }
-                    return html`<span class="text-[10px]">${name}</span>`;
-                };
-
-                return html`
-                    <div className="min-h-screen relative pb-20 no-scrollbar overflow-x-hidden select-none">
-                        <div className="fixed inset-0 pointer-events-none opacity-20 z-0">
-                            <div className="absolute top-10 left-10 animate-spin-slow">${Icon('Flower', 60, 'text-blue-300')}</div>
-                            <div className="absolute bottom-40 right-5 animate-pulse">${Icon('Flower', 100, 'text-pink-200')}</div>
+            return (
+                <div className="min-h-screen bg-[#F0F7FF] relative pb-20 no-scrollbar overflow-x-hidden select-none">
+                    {/* 背景可愛花花裝飾 - 恢復並強化可愛感 */}
+                    <div className="fixed inset-0 pointer-events-none z-0 opacity-30">
+                        <div className="absolute top-10 left-10 animate-spin-slow text-blue-300">
+                            <Icon name="flower" size={80} />
                         </div>
+                        <div className="absolute top-1/4 right-[-20px] text-pink-300 animate-float">
+                            <Icon name="flower" size={120} />
+                        </div>
+                        <div className="absolute bottom-40 left-[-10px] text-blue-200 animate-bounce" style={{animationDuration: '5s'}}>
+                            <Icon name="flower" size={60} />
+                        </div>
+                        <div className="absolute bottom-10 right-20 animate-spin-slow text-pink-200" style={{animationDuration: '20s'}}>
+                            <Icon name="flower" size={90} />
+                        </div>
+                        <div className="absolute top-1/2 left-1/4 text-yellow-200 opacity-40">
+                            <Icon name="star" size={40} fill="currentColor" />
+                        </div>
+                    </div>
 
-                        <div className="relative z-10 max-w-md mx-auto h-screen overflow-y-auto no-scrollbar">
-                            <header className="pt-16 pb-6 px-6 text-center">
-                                <div className="inline-block bg-white p-6 rounded-[2.8rem] shadow-xl border-4 border-white mb-4 relative">
-                                    ${Icon('CupSoda', 56, 'text-blue-400')}
-                                    <div className="absolute -top-1 -right-1 bg-pink-400 p-1.5 rounded-full border-4 border-white shadow-md">
-                                        ${Icon('Heart', 12, 'text-white fill-current')}
-                                    </div>
+                    <div className="relative z-10 max-w-md mx-auto">
+                        <header className="pt-12 pb-6 px-6 text-center">
+                            <div className="inline-block bg-white p-6 rounded-[3rem] shadow-2xl border-4 border-white mb-4 relative">
+                                <div className="text-blue-400">
+                                    <Icon name="cup-soda" size={64} />
                                 </div>
-                                <h1 className="text-4xl font-black text-blue-900 leading-tight">手搖是信仰 <span className="text-blue-400">2026</span></h1>
-                                <p className="text-blue-300 font-bold text-sm mt-2 flex items-center justify-center gap-2">
-                                    ${Icon('Star', 14, 'fill-current text-yellow-300')} 什麼時候能戒掉呢？ ${Icon('Star', 14, 'fill-current text-yellow-300')}
+                                <div className="absolute -top-3 -right-3 bg-pink-400 p-2.5 rounded-full border-4 border-white shadow-lg">
+                                    <Icon name="heart" size={20} fill="currentColor" className="text-white" />
+                                </div>
+                            </div>
+                            <h1 className="text-4xl font-black text-blue-900 tracking-tight">手搖是信仰 2026</h1>
+                            <p className="text-blue-400 font-bold text-sm mt-3 flex items-center justify-center gap-2">
+                                <Icon name="star" size={16} fill="currentColor" className="text-yellow-300" />
+                                今天也要喝得像個富翁 ✨
+                                <Icon name="star" size={16} fill="currentColor" className="text-yellow-300" />
+                            </p>
+
+                            <div className="grid grid-cols-3 gap-3 mt-8 px-2">
+                                <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-sm border border-white flex flex-col items-center">
+                                    <Icon name="bar-chart-3" size={20} className="text-blue-300 mb-1" />
+                                    <span className="text-[10px] font-black text-slate-300 uppercase">總杯數</span>
+                                    <span className="text-sm font-black text-slate-700">{stats.count} 杯</span>
+                                </div>
+                                <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-sm border border-white flex flex-col items-center">
+                                    <Icon name="dollar-sign" size={20} className="text-pink-300 mb-1" />
+                                    <span className="text-[10px] font-black text-slate-300 uppercase">總開銷</span>
+                                    <span className="text-sm font-black text-slate-700">${stats.total}</span>
+                                </div>
+                                <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-sm border border-white flex flex-col items-center overflow-hidden text-center">
+                                    <Icon name="store" size={20} className="text-blue-300 mb-1" />
+                                    <span className="text-[10px] font-black text-slate-300 uppercase">最愛店</span>
+                                    <span className="text-[10px] font-black text-slate-700 truncate w-full">{stats.topShop}</span>
+                                </div>
+                            </div>
+                        </header>
+
+                        <main className="px-5">
+                            <div className="bg-white/95 backdrop-blur-md rounded-[3.5rem] shadow-2xl border-[10px] border-white overflow-hidden p-1 shadow-blue-100/50">
+                                <div className="flex items-center justify-between px-8 py-6 bg-blue-50/40">
+                                    <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="p-2 text-blue-400 active:scale-75 transition-transform">
+                                        <Icon name="chevron-left" size={32} />
+                                    </button>
+                                    <h2 className="text-2xl font-black text-slate-800 tracking-widest">
+                                        {currentDate.getFullYear()} / {currentDate.getMonth() + 1}
+                                    </h2>
+                                    <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} className="p-2 text-blue-400 active:scale-75 transition-transform">
+                                        <Icon name="chevron-right" size={32} />
+                                    </button>
+                                </div>
+                                
+                                <div className="grid grid-cols-7 text-center pt-5 pb-3 px-6">
+                                    {['日', '一', '二', '三', '四', '五', '六'].map(d => (
+                                        <div key={d} className="text-[11px] font-black text-blue-200 uppercase tracking-widest">{d}</div>
+                                    ))}
+                                </div>
+
+                                <div className="grid grid-cols-7 gap-2 px-6 pb-12">
+                                    {Array.from({ length: firstDay(currentDate.getFullYear(), currentDate.getMonth()) }).map((_, i) => (
+                                        <div key={`empty-${i}`} />
+                                    ))}
+                                    {Array.from({ length: daysInMonth(currentDate.getFullYear(), currentDate.getMonth()) }).map((_, i) => {
+                                        const day = i + 1;
+                                        const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                        const hasRecord = records[dateStr]?.length > 0;
+                                        
+                                        return (
+                                            <div key={day} onClick={() => { setSelectedDate(dateStr); setIsModalOpen(true); }}
+                                                className={`h-12 flex items-center justify-center rounded-2xl font-black text-sm transition-all relative cursor-pointer
+                                                ${hasRecord ? 'bg-blue-500 text-white shadow-lg shadow-blue-200 scale-105' : 'bg-slate-50 text-slate-300 active:bg-blue-50'}`}>
+                                                {day}
+                                                {hasRecord && (
+                                                    <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-pink-400 rounded-full border-2 border-white" />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            
+                            <div className="mt-12 mb-10 text-center">
+                                <p className="text-xs font-black text-blue-300/70 flex items-center justify-center gap-3 tracking-widest uppercase bg-white/40 inline-block px-6 py-2 rounded-full border border-white">
+                                    <Icon name="flower" size={14} /> 此紀錄僅存於這支手機 <Icon name="flower" size={14} />
                                 </p>
+                            </div>
+                        </main>
+                    </div>
 
-                                <div className="grid grid-cols-2 gap-3 mt-8 px-2">
-                                    ${[
-                                        {label: '總杯數', val: stats.count+' 杯', icon: 'BarChart3'},
-                                        {label: '總開銷', val: '$'+stats.total, icon: 'DollarSign'},
-                                        {label: '最愛店家', val: stats.shop, icon: 'Store'},
-                                        {label: '最愛品項', val: stats.item, icon: 'Coffee'}
-                                    ].map(s => html`
-                                        <div key=${s.label} className="bg-white/80 backdrop-blur-md p-4 rounded-[1.8rem] border border-white shadow-sm flex flex-col items-center">
-                                            <div className="bg-blue-50 p-2 rounded-xl mb-1 text-blue-400">${Icon(s.icon, 16)}</div>
-                                            <span className="text-[10px] font-black text-slate-300 uppercase">${s.label}</span>
-                                            <span className="text-sm font-black text-slate-700 truncate w-full px-2">${s.val}</span>
-                                        </div>
-                                    `)}
+                    {isModalOpen && (
+                        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-blue-900/40 backdrop-blur-sm">
+                            <div className="bg-white w-full max-w-md h-[94vh] rounded-t-[4rem] shadow-2xl flex flex-col border-t-[12px] border-white animate-in slide-in-from-bottom duration-500">
+                                <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto mt-5 shrink-0" />
+                                
+                                <div className="px-10 py-8 flex justify-between items-center">
+                                    <div className="flex items-center gap-4 text-slate-800">
+                                        <Icon name="heart" size={28} fill="currentColor" className="text-pink-400" />
+                                        <h3 className="text-2xl font-black">{selectedDate}</h3>
+                                    </div>
+                                    <button onClick={() => setIsModalOpen(false)} className="p-2.5 bg-slate-50 text-slate-400 rounded-full active:scale-90 transition-transform">
+                                        <Icon name="x" size={28} />
+                                    </button>
                                 </div>
-                            </header>
 
-                            <main className="px-5 mb-10">
-                                <div className="bg-white/95 rounded-[3.5rem] shadow-2xl border-[8px] border-white overflow-hidden">
-                                    <div className="flex items-center justify-between px-8 py-7 bg-blue-50/30">
-                                        <button onClick=${() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth()-1, 1))} className="p-2 text-blue-400 active:scale-75 transition-all">${Icon('ChevronLeft', 28)}</button>
-                                        <h2 className="text-2xl font-black text-slate-800">${currentDate.getFullYear()} / ${currentDate.getMonth()+1}</h2>
-                                        <button onClick=${() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth()+1, 1))} className="p-2 text-blue-400 active:scale-75 transition-all">${Icon('ChevronRight', 28)}</button>
-                                    </div>
-                                    <div className="grid grid-cols-7 text-center pb-3 px-5 pt-4">
-                                        ${['日','一','二','三','四','五','六'].map(d => html`<div key=${d} className="text-[11px] font-black text-blue-200 uppercase">${d}</div>`)}
-                                    </div>
-                                    <div className="grid grid-cols-7 gap-2 px-5 pb-12">
-                                        ${Array.from({ length: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay() }).map((_, i) => html`<div key=${'e'+i} />`)}
-                                        ${Array.from({ length: new Date(currentDate.getFullYear(), currentDate.getMonth()+1, 0).getDate() }).map((_, i) => {
-                                            const d = i + 1;
-                                            const ds = currentDate.getFullYear() + '-' + String(currentDate.getMonth()+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-                                            const has = records[ds]?.length > 0;
-                                            return html`
-                                                <div key=${d} onClick=${() => { setSelectedDate(ds); setIsModalOpen(true); }}
-                                                    className=${`h-12 flex items-center justify-center rounded-2xl font-black transition-all relative ${has ? 'bg-blue-500 text-white shadow-lg shadow-blue-200' : 'bg-slate-50 text-slate-300 active:bg-blue-50'}`}>
-                                                    ${d}
-                                                    ${has && html`<div className="absolute top-1 right-1 w-2 h-2 bg-pink-400 rounded-full border-2 border-white" />`}
-                                                </div>
-                                            `;
-                                        })}
-                                    </div>
-                                </div>
-                                <div className="mt-12 text-center pb-10">
-                                    <p className="text-sm font-black text-blue-300 tracking-widest bg-white/50 inline-block px-6 py-2 rounded-full border border-white">今天的我也要喝得像個富翁一樣可愛 ✨</p>
-                                </div>
-                            </main>
-                        </div>
-
-                        ${isModalOpen && html`
-                            <div className="fixed inset-0 z-50 flex items-end justify-center bg-blue-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-                                <div className="bg-white w-full max-w-md h-[92vh] rounded-t-[4rem] shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-500 border-t-[10px] border-white">
-                                    <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto mt-4 shrink-0" />
-                                    <div className="px-10 py-6 flex justify-between items-center shrink-0">
-                                        <div className="flex items-center gap-3">
-                                            ${Icon('Heart', 24, 'text-pink-400 fill-current')}
-                                            <h3 className="text-2xl font-black text-slate-800">${selectedDate}</h3>
-                                        </div>
-                                        <button onClick=${() => setIsModalOpen(false)} className="p-2 bg-slate-50 text-slate-400 rounded-full active:scale-75 transition-all">${Icon('X', 24)}</button>
-                                    </div>
-
-                                    <div className="px-10 pb-10 overflow-y-auto flex-1 space-y-8 no-scrollbar">
-                                        ${records[selectedDate]?.map(r => html`
-                                            <div key=${r.id} className="bg-slate-50 p-5 rounded-[2.5rem] flex justify-between items-center border border-slate-100">
+                                <div className="px-10 pb-12 overflow-y-auto flex-1 no-scrollbar space-y-10">
+                                    <div className="space-y-5">
+                                        {records[selectedDate]?.map(r => (
+                                            <div key={r.id} className="bg-slate-50 p-6 rounded-[2.8rem] flex justify-between items-center border border-slate-100 shadow-sm animate-in zoom-in duration-300">
                                                 <div>
-                                                    <p className="font-black text-slate-800 text-lg">${r.shop} / ${r.item}</p>
-                                                    <div className="flex gap-2 mt-1">
-                                                        <span className="text-[10px] font-black bg-blue-100 text-blue-500 px-2.5 py-0.5 rounded-full">${r.ice}</span>
-                                                        <span className="text-[10px] font-black bg-blue-100 text-blue-500 px-2.5 py-0.5 rounded-full">${r.sweetness}</span>
-                                                        <span className="text-[10px] font-black bg-pink-400 text-white px-2.5 py-0.5 rounded-full">$${r.price}</span>
+                                                    <p className="font-black text-slate-800 text-xl">{r.shop} / {r.item}</p>
+                                                    <div className="flex gap-2.5 mt-2">
+                                                        <span className="text-[11px] font-black bg-blue-100 text-blue-500 px-3.5 py-1 rounded-full uppercase">{r.ice}</span>
+                                                        <span className="text-[11px] font-black bg-blue-100 text-blue-500 px-3.5 py-1 rounded-full uppercase">{r.sweetness}</span>
+                                                        <span className="text-[11px] font-black bg-pink-400 text-white px-3.5 py-1 rounded-full shadow-sm">$ {r.price}</span>
                                                     </div>
                                                 </div>
-                                                <button onClick=${() => handleDelete(r.id)} className="p-3 bg-white text-pink-300 rounded-2xl shadow-sm active:bg-pink-500 active:text-white transition-all">${Icon('Trash2', 20)}</button>
+                                                <button onClick={() => handleDelete(r.id)} className="p-3.5 bg-white text-pink-300 rounded-[1.5rem] shadow-sm active:bg-pink-500 active:text-white transition-all">
+                                                    <Icon name="trash-2" size={22} />
+                                                </button>
                                             </div>
-                                        `)}
+                                        ))}
+                                    </div>
 
-                                        <div className="bg-white p-7 rounded-[3rem] border-[4px] border-blue-50 shadow-xl space-y-6 relative overflow-hidden">
-                                            <h4 className="text-center font-black text-blue-900 tracking-widest uppercase">收藏這一杯美好 ✨</h4>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <input type="text" placeholder="店家" value=${form.shop} onInput=${e=>setForm({...form, shop:e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 font-black text-slate-800" />
-                                                <input type="text" placeholder="品項" value=${form.item} onInput=${e=>setForm({...form, item:e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 font-black text-slate-800" />
+                                    <div className="bg-white p-8 rounded-[3.5rem] border-[6px] border-blue-50 shadow-inner space-y-7">
+                                        <h4 className="text-center font-black text-blue-900 tracking-widest uppercase text-base">收藏這一杯美好 ✨</h4>
+                                        
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] font-black text-slate-300 ml-5 uppercase">店家</label>
+                                                <input type="text" placeholder="例如：50嵐" value={form.shop} onInput={e => setForm({...form, shop: e.target.value})} 
+                                                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-5 font-black text-slate-700 outline-none focus:ring-2 ring-blue-100" />
                                             </div>
-                                            <div className="relative">
-                                                <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-slate-200 text-2xl">$</span>
-                                                <input type="number" placeholder="0" value=${form.price} onInput=${e=>setForm({...form, price:e.target.value})} className="w-full bg-slate-50 border-none rounded-[2.5rem] pl-14 pr-6 py-6 font-black text-slate-800 text-4xl" />
+                                            <div className="space-y-2">
+                                                <label className="text-[11px] font-black text-slate-300 ml-5 uppercase">品項</label>
+                                                <input type="text" placeholder="例如：珍珠奶茶" value={form.item} onInput={e => setForm({...form, item: e.target.value})} 
+                                                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-5 font-black text-slate-700 outline-none focus:ring-2 ring-blue-100" />
                                             </div>
-                                            <button onClick=${handleSave} className="w-full py-6 bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-[2.8rem] font-black text-xl shadow-xl shadow-blue-100 active:scale-95 transition-all flex items-center justify-center gap-3">
-                                                ${Icon('Heart', 24, 'fill-current text-pink-200')} 收藏這一杯美好 ✨
-                                            </button>
                                         </div>
+
+                                        <div className="space-y-3">
+                                            <label className="text-[11px] font-black text-slate-300 ml-5 uppercase">冰塊 / 甜度</label>
+                                            <div className="flex gap-3">
+                                                <select value={form.ice} onChange={e => setForm({...form, ice: e.target.value})} className="flex-1 bg-slate-50 border-none rounded-2xl px-5 py-4 font-bold text-slate-600 outline-none cursor-pointer">
+                                                    {iceOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                                                </select>
+                                                <select value={form.sweetness} onChange={e => setForm({...form, sweetness: e.target.value})} className="flex-1 bg-slate-50 border-none rounded-2xl px-5 py-4 font-bold text-slate-600 outline-none cursor-pointer">
+                                                    {sweetnessOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="relative">
+                                            <span className="absolute left-8 top-1/2 -translate-y-1/2 font-black text-slate-200 text-4xl leading-none">$</span>
+                                            <input type="number" placeholder="0" value={form.price} onInput={e => setForm({...form, price: e.target.value})} 
+                                                className="w-full bg-slate-50 border-none rounded-[3rem] pl-16 pr-8 py-8 font-black text-slate-800 text-5xl outline-none focus:ring-2 ring-blue-100" />
+                                        </div>
+
+                                        <button onClick={handleSave} className="w-full py-7 bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-[3rem] font-black text-2xl shadow-xl shadow-blue-100 active:scale-95 transition-all flex items-center justify-center gap-4">
+                                            <Icon name="coffee" size={28} /> 紀錄這份信仰
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-                        `}
-                    </div>
-                `;
-            };
+                        </div>
+                    )}
+                </div>
+            );
+        };
 
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(React.createElement(App));
-        }
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
