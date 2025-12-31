@@ -14,7 +14,7 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- 使用 lucide 核心庫確保在單一檔案環境的穩定性 -->
+    <!-- 使用最穩定的 Lucide 核心庫 -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
@@ -58,18 +58,29 @@
             const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 1));
             const [selectedDate, setSelectedDate] = useState(null);
             const [isModalOpen, setIsModalOpen] = useState(false);
+            const [lucideReady, setLucideReady] = useState(false);
             
             // 表單狀態
             const [form, setForm] = useState({ shop: '', item: '', price: '', ice: '微冰', sweetness: '微糖' });
             const iceOptions = ["正常", "少冰", "微冰", "去冰", "常溫"];
             const sweetnessOptions = ["全糖", "半糖", "微糖", "無糖"];
 
-            // 1. 初始化：讀取資料
+            // 1. 初始化：讀取資料並檢查 Lucide 是否準備好
             useEffect(() => {
                 const saved = localStorage.getItem('drink_faith_2026_final_stable');
                 if (saved) {
                     try { setRecords(JSON.parse(saved)); } catch (e) { console.error(e); }
                 }
+
+                // 檢查 Lucide 是否載入完成
+                const checkLucide = () => {
+                    if (window.lucide) {
+                        setLucideReady(true);
+                    } else {
+                        setTimeout(checkLucide, 100);
+                    }
+                };
+                checkLucide();
             }, []);
 
             // 2. 統計數據
@@ -107,15 +118,19 @@
             const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
             const firstDay = (y, m) => new Date(y, m, 1).getDay();
 
-            /** * 修正後的圖標組件
-             * 修正了 Lucide 核心庫的圖標渲染邏輯
-             * 並改用更穩定的名稱對應
+            /** * 極致穩定圖標組件
+             * 修正 Lucide 渲染邏輯並強制 kebab-case
              */
             const Icon = ({ name, size=24, className="", fill="none" }) => {
-                // 嘗試多種名稱格式以適應不同版本的庫
-                const iconData = window.lucide ? (window.lucide.icons[name] || window.lucide.icons[name.toLowerCase()] || window.lucide.icons[name.replace(/([A-Z])/g, "-$1").toLowerCase()]) : null;
+                const [iconData, setIconData] = useState(null);
+
+                useEffect(() => {
+                    if (window.lucide && window.lucide.icons[name]) {
+                        setIconData(window.lucide.icons[name]);
+                    }
+                }, [name, lucideReady]);
                 
-                if (!iconData) return <span className="text-[10px] opacity-20">?</span>;
+                if (!iconData) return <div style={{width: size, height: size}} className={className} />;
 
                 const [tag, attrs, children] = iconData;
 
@@ -126,7 +141,7 @@
                         viewBox="0 0 24 24"
                         fill={fill}
                         stroke="currentColor"
-                        strokeWidth="2"
+                        strokeWidth="2.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         className={className}
@@ -140,28 +155,31 @@
 
             return (
                 <div className="min-h-screen bg-[#F0F7FF] relative pb-20 no-scrollbar overflow-x-hidden select-none">
-                    {/* 背景可愛花花裝飾 - 恢復可愛圖案 */}
+                    {/* 背景可愛花花裝飾 - 補得更滿 */}
                     <div className="fixed inset-0 pointer-events-none z-0 opacity-30">
                         <div className="absolute top-10 left-10 animate-spin-slow text-blue-300">
                             <Icon name="flower" size={80} />
                         </div>
-                        <div className="absolute top-1/4 right-[-20px] text-pink-300 animate-float">
+                        <div className="absolute top-[15%] right-[10%] text-pink-300 animate-float">
+                            <Icon name="flower" size={100} />
+                        </div>
+                        <div className="absolute top-[40%] left-[-20px] text-blue-200 animate-bounce" style={{animationDuration: '6s'}}>
+                            <Icon name="flower" size={70} />
+                        </div>
+                        <div className="absolute bottom-[20%] right-[-10px] animate-spin-slow text-pink-200" style={{animationDuration: '25s'}}>
                             <Icon name="flower" size={120} />
                         </div>
-                        <div className="absolute bottom-40 left-[-10px] text-blue-200 animate-bounce" style={{animationDuration: '5s'}}>
+                        <div className="absolute bottom-10 left-20 text-blue-100 opacity-50">
                             <Icon name="flower" size={60} />
                         </div>
-                        <div className="absolute bottom-10 right-20 animate-spin-slow text-pink-200" style={{animationDuration: '20s'}}>
-                            <Icon name="flower" size={90} />
-                        </div>
-                        <div className="absolute top-1/2 left-1/4 text-yellow-200 opacity-40">
+                        <div className="absolute top-1/2 left-1/3 text-yellow-200 opacity-40">
                             <Icon name="star" size={40} fill="currentColor" />
                         </div>
                     </div>
 
                     <div className="relative z-10 max-w-md mx-auto">
                         <header className="pt-12 pb-6 px-6 text-center">
-                            <div className="inline-block bg-white p-6 rounded-[3rem] shadow-2xl border-4 border-white mb-4 relative">
+                            <div className="inline-block bg-white p-7 rounded-[3.5rem] shadow-2xl border-4 border-white mb-6 relative">
                                 <div className="text-blue-400">
                                     <Icon name="cup-soda" size={64} />
                                 </div>
@@ -170,34 +188,34 @@
                                 </div>
                             </div>
                             <h1 className="text-4xl font-black text-blue-900 tracking-tight text-center">手搖是信仰 2026</h1>
-                            <p className="text-blue-400 font-bold text-sm mt-3 flex items-center justify-center gap-2">
+                            <p className="text-blue-400 font-bold text-sm mt-4 flex items-center justify-center gap-2">
                                 <Icon name="star" size={16} fill="currentColor" className="text-yellow-300" />
-                                今天也要喝得像個富翁 ✨
+                                喝下去的每一口都是靈魂 ✨
                                 <Icon name="star" size={16} fill="currentColor" className="text-yellow-300" />
                             </p>
 
-                            <div className="grid grid-cols-3 gap-3 mt-8 px-2">
+                            <div className="grid grid-cols-3 gap-3 mt-10 px-2">
                                 <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-sm border border-white flex flex-col items-center">
-                                    <Icon name="bar-chart-3" size={20} className="text-blue-300 mb-1" />
+                                    <Icon name="bar-chart-3" size={22} className="text-blue-300 mb-1" />
                                     <span className="text-[10px] font-black text-slate-300 uppercase">總杯數</span>
-                                    <span className="text-sm font-black text-slate-700">{stats.count} 杯</span>
+                                    <span className="text-base font-black text-slate-700">{stats.count} 杯</span>
                                 </div>
                                 <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-sm border border-white flex flex-col items-center">
-                                    <Icon name="dollar-sign" size={20} className="text-pink-300 mb-1" />
+                                    <Icon name="dollar-sign" size={22} className="text-pink-300 mb-1" />
                                     <span className="text-[10px] font-black text-slate-300 uppercase">總開銷</span>
-                                    <span className="text-sm font-black text-slate-700">${stats.total}</span>
+                                    <span className="text-base font-black text-slate-700">${stats.total}</span>
                                 </div>
                                 <div className="bg-white/90 backdrop-blur-md p-4 rounded-[2rem] shadow-sm border border-white flex flex-col items-center overflow-hidden text-center">
-                                    <Icon name="store" size={20} className="text-blue-300 mb-1" />
+                                    <Icon name="store" size={22} className="text-blue-300 mb-1" />
                                     <span className="text-[10px] font-black text-slate-300 uppercase">最愛店</span>
                                     <span className="text-[10px] font-black text-slate-700 truncate w-full px-1">{stats.topShop}</span>
                                 </div>
                             </div>
                         </header>
 
-                        <main className="px-5">
-                            <div className="bg-white/95 backdrop-blur-md rounded-[3.5rem] shadow-2xl border-[10px] border-white overflow-hidden p-1 shadow-blue-100/50">
-                                <div className="flex items-center justify-between px-8 py-6 bg-blue-50/40">
+                        <main className="px-5 pb-12">
+                            <div className="bg-white/95 backdrop-blur-md rounded-[4rem] shadow-2xl border-[12px] border-white overflow-hidden p-1 shadow-blue-100/50">
+                                <div className="flex items-center justify-between px-8 py-7 bg-blue-50/40">
                                     <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="p-2 text-blue-400 active:scale-75 transition-transform">
                                         <Icon name="chevron-left" size={32} />
                                     </button>
@@ -209,7 +227,7 @@
                                     </button>
                                 </div>
                                 
-                                <div className="grid grid-cols-7 text-center pt-5 pb-3 px-6">
+                                <div className="grid grid-cols-7 text-center pt-6 pb-3 px-6">
                                     {['日', '一', '二', '三', '四', '五', '六'].map(d => (
                                         <div key={d} className="text-[11px] font-black text-blue-200 uppercase tracking-widest">{d}</div>
                                     ))}
@@ -238,9 +256,9 @@
                                 </div>
                             </div>
                             
-                            <div className="mt-12 mb-10 text-center">
-                                <p className="text-xs font-black text-blue-300/70 flex items-center justify-center gap-3 tracking-widest uppercase bg-white/40 inline-block px-6 py-2 rounded-full border border-white">
-                                    <Icon name="flower" size={14} /> 此紀錄僅存於這支手機 <Icon name="flower" size={14} />
+                            <div className="mt-14 mb-10 text-center">
+                                <p className="text-xs font-black text-blue-300/80 flex items-center justify-center gap-3 tracking-widest uppercase bg-white/40 inline-block px-8 py-3 rounded-full border border-white">
+                                    <Icon name="flower" size={16} /> 紀錄專屬 2026 的美好 <Icon name="flower" size={16} />
                                 </p>
                             </div>
                         </main>
@@ -248,7 +266,7 @@
 
                     {isModalOpen && (
                         <div className="fixed inset-0 z-[100] flex items-end justify-center bg-blue-900/40 backdrop-blur-sm">
-                            <div className="bg-white w-full max-w-md h-[94vh] rounded-t-[4rem] shadow-2xl flex flex-col border-t-[12px] border-white animate-in slide-in-from-bottom duration-500">
+                            <div className="bg-white w-full max-w-md h-[94vh] rounded-t-[4.5rem] shadow-2xl flex flex-col border-t-[14px] border-white animate-in slide-in-from-bottom duration-500">
                                 <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto mt-5 shrink-0" />
                                 
                                 <div className="px-10 py-8 flex justify-between items-center shrink-0">
@@ -256,66 +274,68 @@
                                         <Icon name="heart" size={28} fill="currentColor" className="text-pink-400" />
                                         <h3 className="text-2xl font-black">{selectedDate}</h3>
                                     </div>
-                                    <button onClick={() => setIsModalOpen(false)} className="p-2.5 bg-slate-50 text-slate-400 rounded-full active:scale-90 transition-transform">
+                                    <button onClick={() => setIsModalOpen(false)} className="p-3 bg-slate-50 text-slate-400 rounded-full active:scale-90 transition-transform">
                                         <Icon name="x" size={28} />
                                     </button>
                                 </div>
 
-                                <div className="px-10 pb-12 overflow-y-auto flex-1 no-scrollbar space-y-10">
-                                    <div className="space-y-5">
+                                <div className="px-10 pb-12 overflow-y-auto flex-1 no-scrollbar space-y-12">
+                                    <div className="space-y-6">
                                         {records[selectedDate]?.map(r => (
-                                            <div key={r.id} className="bg-slate-50 p-6 rounded-[2.8rem] flex justify-between items-center border border-slate-100 shadow-sm animate-in zoom-in duration-300">
+                                            <div key={r.id} className="bg-slate-50 p-6 rounded-[3rem] flex justify-between items-center border border-slate-100 shadow-sm animate-in zoom-in duration-300">
                                                 <div>
-                                                    <p className="font-black text-slate-800 text-xl">{r.shop} / {r.item}</p>
-                                                    <div className="flex gap-2.5 mt-2">
-                                                        <span className="text-[11px] font-black bg-blue-100 text-blue-500 px-3.5 py-1 rounded-full uppercase">{r.ice}</span>
-                                                        <span className="text-[11px] font-black bg-blue-100 text-blue-500 px-3.5 py-1 rounded-full uppercase">{r.sweetness}</span>
-                                                        <span className="text-[11px] font-black bg-pink-400 text-white px-3.5 py-1 rounded-full shadow-sm">$ {r.price}</span>
+                                                    <p className="font-black text-slate-800 text-xl leading-tight">{r.shop} / {r.item}</p>
+                                                    <div className="flex gap-2.5 mt-2.5">
+                                                        <span className="text-[11px] font-black bg-blue-100 text-blue-500 px-4 py-1 rounded-full uppercase tracking-tighter">{r.ice}</span>
+                                                        <span className="text-[11px] font-black bg-blue-100 text-blue-500 px-4 py-1 rounded-full uppercase tracking-tighter">{r.sweetness}</span>
+                                                        <span className="text-[11px] font-black bg-pink-400 text-white px-4 py-1 rounded-full shadow-sm">$ {r.price}</span>
                                                     </div>
                                                 </div>
-                                                <button onClick={() => handleDelete(r.id)} className="p-3.5 bg-white text-pink-300 rounded-[1.5rem] shadow-sm active:bg-pink-500 active:text-white transition-all">
-                                                    <Icon name="trash-2" size={22} />
+                                                <button onClick={() => handleDelete(r.id)} className="p-4 bg-white text-pink-300 rounded-[1.8rem] shadow-sm active:bg-pink-500 active:text-white transition-all">
+                                                    <Icon name="trash-2" size={24} />
                                                 </button>
                                             </div>
                                         ))}
                                     </div>
 
-                                    <div className="bg-white p-8 rounded-[3.5rem] border-[6px] border-blue-50 shadow-inner space-y-7">
-                                        <h4 className="text-center font-black text-blue-900 tracking-widest uppercase text-base">收藏這一杯美好 ✨</h4>
+                                    <div className="bg-white p-8 rounded-[4rem] border-[8px] border-blue-50 shadow-inner space-y-8">
+                                        <h4 className="text-center font-black text-blue-900 tracking-widest uppercase text-base flex items-center justify-center gap-2">
+                                            <Icon name="coffee" size={20} /> 收藏這一杯美好 ✨
+                                        </h4>
                                         
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-2 gap-5">
                                             <div className="space-y-2">
-                                                <label className="text-[11px] font-black text-slate-300 ml-5 uppercase">店家</label>
+                                                <label className="text-[11px] font-black text-slate-300 ml-6 uppercase">店家</label>
                                                 <input type="text" placeholder="例如：50嵐" value={form.shop} onInput={e => setForm({...form, shop: e.target.value})} 
-                                                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-5 font-black text-slate-700 outline-none focus:ring-2 ring-blue-100" />
+                                                    className="w-full bg-slate-50 border-none rounded-3xl px-6 py-5 font-black text-slate-700 outline-none focus:ring-4 ring-blue-100" />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-[11px] font-black text-slate-300 ml-5 uppercase">品項</label>
+                                                <label className="text-[11px] font-black text-slate-300 ml-6 uppercase">品項</label>
                                                 <input type="text" placeholder="例如：珍珠奶茶" value={form.item} onInput={e => setForm({...form, item: e.target.value})} 
-                                                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-5 font-black text-slate-700 outline-none focus:ring-2 ring-blue-100" />
+                                                    className="w-full bg-slate-50 border-none rounded-3xl px-6 py-5 font-black text-slate-700 outline-none focus:ring-4 ring-blue-100" />
                                             </div>
                                         </div>
 
-                                        <div className="space-y-3">
-                                            <label className="text-[11px] font-black text-slate-300 ml-5 uppercase">冰塊 / 甜度</label>
-                                            <div className="flex gap-3">
-                                                <select value={form.ice} onChange={e => setForm({...form, ice: e.target.value})} className="flex-1 bg-slate-50 border-none rounded-2xl px-5 py-4 font-bold text-slate-600 outline-none cursor-pointer">
+                                        <div className="space-y-4">
+                                            <label className="text-[11px] font-black text-slate-300 ml-6 uppercase">冰塊 / 甜度</label>
+                                            <div className="flex gap-4">
+                                                <select value={form.ice} onChange={e => setForm({...form, ice: e.target.value})} className="flex-1 bg-slate-50 border-none rounded-[1.5rem] px-6 py-5 font-bold text-slate-600 outline-none cursor-pointer">
                                                     {iceOptions.map(o => <option key={o} value={o}>{o}</option>)}
                                                 </select>
-                                                <select value={form.sweetness} onChange={e => setForm({...form, sweetness: e.target.value})} className="flex-1 bg-slate-50 border-none rounded-2xl px-5 py-4 font-bold text-slate-600 outline-none cursor-pointer">
+                                                <select value={form.sweetness} onChange={e => setForm({...form, sweetness: e.target.value})} className="flex-1 bg-slate-50 border-none rounded-[1.5rem] px-6 py-5 font-bold text-slate-600 outline-none cursor-pointer">
                                                     {sweetnessOptions.map(o => <option key={o} value={o}>{o}</option>)}
                                                 </select>
                                             </div>
                                         </div>
 
                                         <div className="relative">
-                                            <span className="absolute left-8 top-1/2 -translate-y-1/2 font-black text-slate-200 text-4xl leading-none">$</span>
+                                            <span className="absolute left-8 top-1/2 -translate-y-1/2 font-black text-slate-200 text-5xl leading-none">$</span>
                                             <input type="number" placeholder="0" value={form.price} onInput={e => setForm({...form, price: e.target.value})} 
-                                                className="w-full bg-slate-50 border-none rounded-[3rem] pl-16 pr-8 py-8 font-black text-slate-800 text-5xl outline-none focus:ring-2 ring-blue-100" />
+                                                className="w-full bg-slate-50 border-none rounded-[3.5rem] pl-20 pr-10 py-10 font-black text-slate-800 text-6xl outline-none focus:ring-4 ring-blue-100" />
                                         </div>
 
-                                        <button onClick={handleSave} className="w-full py-7 bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-[3rem] font-black text-2xl shadow-xl shadow-blue-100 active:scale-95 transition-all flex items-center justify-center gap-4">
-                                            <Icon name="coffee" size={28} /> 紀錄這份信仰
+                                        <button onClick={handleSave} className="w-full py-8 bg-gradient-to-br from-blue-400 to-blue-600 text-white rounded-[3.5rem] font-black text-2xl shadow-xl shadow-blue-100 active:scale-95 transition-all flex items-center justify-center gap-5">
+                                            <Icon name="heart" size={28} fill="currentColor" className="text-pink-200" /> 紀錄這份信仰
                                         </button>
                                     </div>
                                 </div>
